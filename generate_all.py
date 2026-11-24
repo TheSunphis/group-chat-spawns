@@ -1,7 +1,7 @@
-"""Generate regular and shiny composites for every PokeAPI Pokémon form.
+"""Generate regular and shiny PikaBot-style cards for every PokeAPI Pokémon form.
 
 Image downloads are processed by a bounded worker pool and saved immediately as JPEGs. Original
-PokeAPI artwork is never cached; only the final spawn images and a compact manifest remain.
+PokeAPI artwork is never cached; only the finished cards and a compact manifest remain.
 """
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ from typing import Callable, Iterable, Iterator, TypeVar
 
 from PIL import Image
 
+from bot_style import pokemon_display_name, pokemon_region, render_spawn_card
 from generate import BACKDROP_DIR, ROOT, SIZE, _compose
 
 API = "https://pokeapi.co/api/v2"
@@ -244,7 +245,13 @@ def render_one(form: dict, pokemon_map: dict, species_map: dict, base_pokemon_ma
         row = {
             "form_id": form["form_id"], "form": form["form_name"],
             "pokemon": pokemon["pokemon_name"], "species_id": species["species_id"],
-            "species": species["species_name"], "rarity": "mythical" if species["is_mythical"] else "legendary" if species["is_legendary"] else "normal",
+            "species": species["species_name"],
+            "display_name": pokemon_display_name(form=form["form_name"],
+                                                  pokemon=pokemon["pokemon_name"],
+                                                  species=species["species_name"]),
+            "region": pokemon_region(species_id=species["species_id"],
+                                     form=form["form_name"], pokemon=pokemon["pokemon_name"]),
+            "rarity": "mythical" if species["is_mythical"] else "legendary" if species["is_legendary"] else "normal",
             "shiny": shiny, "backdrop": backdrop_name,
             "file": path.relative_to(output_root).as_posix(),
             "artwork_url": url, "artwork_source": source_kind,
@@ -259,17 +266,33 @@ def render_one(form: dict, pokemon_map: dict, species_map: dict, base_pokemon_ma
             rows.append(row)
             continue
         if path.is_file() and not force:
-            row["available"] = True
-            row["status"] = "already-present"
-            rows.append(row)
-            continue
+            try:
+                with Image.open(path) as existing:
+                    is_current_card = existing.size == SIZE
+            except (OSError, ValueError):
+                is_current_card = False
+            if is_current_card:
+                row["available"] = True
+                row["status"] = "already-present"
+                rows.append(row)
+                continue
         try:
             artwork = load_artwork(url)
             try:
                 with Image.open(BACKDROP_DIR / f"{backdrop_name}.png") as source:
                     backdrop = source.convert("RGBA")
                 try:
-                    composite = _compose(backdrop, artwork, pixel_sprite=bool(pixel_sprite))
+                    scene = _compose(backdrop, artwork, pixel_sprite=bool(pixel_sprite))
+                    try:
+                        composite = render_spawn_card(
+                            scene, species_id=species["species_id"],
+                            form=form["form_name"], pokemon=pokemon["pokemon_name"],
+                            species=species["species_name"], rarity=row["rarity"],
+                            shiny=shiny, region=row["region"], display_name=row["display_name"],
+                            catch_name=species["species_name"],
+                        )
+                    finally:
+                        scene.close()
                     path.parent.mkdir(parents=True, exist_ok=True)
                     temp = path.with_name(f".{path.stem}.{os.getpid()}.tmp.jpg")
                     try:
@@ -405,6 +428,7 @@ def main(argv: list[str] | None = None) -> int:
         "source": "PokeAPI",
         "canvas": list(SIZE),
         "format": f"JPEG quality {JPEG_QUALITY}",
+        "image_style": "pikabot-guess-card",
         "form_count": len(forms),
         "available_image_count": available,
         "missing_image_count": len(missing),

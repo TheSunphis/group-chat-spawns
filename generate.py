@@ -1,8 +1,9 @@
-"""Build group-spawn images from PokeAPI artwork and the repository's scenic backdrops.
+"""Build PikaBot-styled group-spawn cards from PokeAPI artwork and scenic backdrops.
 
 The committed background plates are high-resolution habitat illustrations. This script fetches
-PokeAPI artwork into memory, composites it over a chosen plate with a soft black ground shadow,
-and saves the finished image. Per-Pokemon jobs run concurrently (default: four workers).
+PokeAPI artwork into memory, composites it over a chosen plate with a soft black ground shadow, then
+frames the scene in the bot's dark pixel-card style. Per-Pokemon jobs run concurrently (default: four
+workers).
 """
 from __future__ import annotations
 
@@ -17,8 +18,10 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
+from bot_style import SIZE, render_spawn_card
+
 ROOT = Path(__file__).resolve().parent
-SIZE = (960, 600)
+SCENE_SIZE = (960, 600)
 ARTWORK_LIMIT = 12 * 1024 * 1024
 USER_AGENT = "PikaBot-GroupSpawnArt/0.2 (+https://github.com/TheSunphis/group-chat-spawns)"
 RARITY_FOLDERS = {
@@ -74,7 +77,7 @@ def fetch_artwork(pokemon_id: int, *, shiny: bool) -> tuple[Image.Image, str, bo
 
 def _compose(backdrop: Image.Image, artwork: Image.Image, *, pixel_sprite: bool) -> Image.Image:
     """Compose the cutout with a clear ground-contact shadow."""
-    canvas = ImageOps.fit(backdrop.convert("RGBA"), SIZE, method=Image.Resampling.LANCZOS,
+    canvas = ImageOps.fit(backdrop.convert("RGBA"), SCENE_SIZE, method=Image.Resampling.LANCZOS,
                           centering=(0.5, 0.5))
     subject = artwork.convert("RGBA")
     max_width, max_height = 480, 430
@@ -82,16 +85,16 @@ def _compose(backdrop: Image.Image, artwork: Image.Image, *, pixel_sprite: bool)
     dimensions = (max(1, round(subject.width * ratio)), max(1, round(subject.height * ratio)))
     resample = Image.Resampling.NEAREST if pixel_sprite else Image.Resampling.LANCZOS
     subject = subject.resize(dimensions, resample)
-    x = (SIZE[0] - subject.width) // 2
+    x = (SCENE_SIZE[0] - subject.width) // 2
 
     ground_y = 514
     y = ground_y - subject.height
     shadow_width = max(120, min(280, round(subject.width * 0.56)))
     shadow_height, cy, alpha, blur = 28, ground_y + 14, 205, 7
 
-    shadow_layer = Image.new("RGBA", SIZE, (0, 0, 0, 0))
+    shadow_layer = Image.new("RGBA", SCENE_SIZE, (0, 0, 0, 0))
     shadow = ImageDraw.Draw(shadow_layer)
-    cx = SIZE[0] // 2
+    cx = SCENE_SIZE[0] // 2
     shadow.ellipse((cx - shadow_width // 2, cy - shadow_height // 2,
                     cx + shadow_width // 2, cy + shadow_height // 2),
                    fill=(0, 0, 0, alpha))
@@ -117,17 +120,29 @@ def render_spawn(entry: dict) -> dict:
     with Image.open(backdrop_path) as source:
         backdrop = source.convert("RGBA")
     artwork, source_url, pixel_sprite = fetch_artwork(int(entry["id"]), shiny=shiny)
-    image = _compose(backdrop, artwork, pixel_sprite=pixel_sprite)
+    scene = _compose(backdrop, artwork, pixel_sprite=pixel_sprite)
+    rarity = folder.removeprefix("shiny-")
+    image = render_spawn_card(
+        scene, species_id=int(entry["id"]), form=str(entry["name"]),
+        pokemon=str(entry["name"]), species=str(entry.get("species", entry["name"])),
+        rarity=rarity, shiny=shiny, region=str(entry.get("region", "")),
+        catch_name=str(entry.get("catch_name", entry.get("name", ""))),
+    )
+    scene.close()
 
     output = ROOT / folder / _filename(entry)
     output.parent.mkdir(parents=True, exist_ok=True)
+    image_size = list(image.size)
     image.save(output, format="JPEG", quality=88, optimize=True, progressive=True)
+    image.close()
+    artwork.close()
+    backdrop.close()
     return {
         "id": int(entry["id"]), "name": str(entry["name"]),
         "folder": folder, "shiny": shiny, "region": str(entry.get("region", "")),
         "backdrop": str(entry["backdrop"]), "file": output.relative_to(ROOT).as_posix(),
         "artwork_url": source_url, "used_pokemon_sprite_fallback": pixel_sprite,
-        "size": list(image.size),
+        "size": image_size,
     }
 
 
@@ -156,7 +171,8 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"failed {row.get('name', row.get('id'))}: {exc}", file=sys.stderr)
 
     results.sort(key=lambda row: (row["folder"], row["id"]))
-    manifest = {"version": 1, "canvas": list(SIZE), "count": len(results), "spawns": results}
+    manifest = {"version": 1, "canvas": list(SIZE), "image_style": "pikabot-guess-card",
+                "count": len(results), "spawns": results}
     (ROOT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print(f"\nGenerated {len(results)} of {len(spawns)} starter images with {args.workers} worker(s).")
     return 1 if failures else 0

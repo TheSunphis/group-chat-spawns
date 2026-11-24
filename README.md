@@ -1,6 +1,6 @@
 # Group chat spawn art
 
-A Pokémon group-spawn image set for PikaBot. Each output combines **full-colour PokeAPI artwork** with a soft-focus habitat backdrop and a black oval ground shadow. Composites are JPEGs so a complete forms-and-shinies catalog stays practical to store and send.
+A Pokémon group-spawn image set for PikaBot. Each output combines **full-colour PokeAPI artwork** with a soft-focus habitat backdrop and a black oval ground shadow, then frames the scene in the same dark, cyan-edged pixel-card style used by `/guess`. Final JPEG cards are 960×640 so the full forms-and-shinies catalog stays practical to store and send.
 
 The image is sent as a plain Telegram photo. The caption is separate:
 
@@ -17,7 +17,9 @@ The image is sent as a plain Telegram photo. The caption is separate:
 - `assets/backdrops/` — illustrated scenery for forests, meadows, caves, snowy mountains, coasts, starry ruins, and optional open sky
 - `spawns.json` — the six-image starter batch
 - `generate_all.py` — bounded-memory catalog generator for all PokeAPI Pokémon forms and shiny variants
-- `manifest.json` / `manifest-all.json` — starter and complete-catalog indexes, including artwork sources and unavailable variants
+- `bot_style.py` — self-contained copy of the bot's dark `/guess` card palette and pixel-font frame
+- `style_existing.py` — wrap an existing 960×600 dataset in bot cards without downloading artwork again
+- `manifest.json` / `manifest-all.json` — starter and complete-catalog indexes, including card style, artwork sources, and unavailable variants
 
 Backdrops are selected by habitat, not just by region. A region can use several scenes, and the same scene type can serve Pokémon from different regions.
 
@@ -29,6 +31,6 @@ python generate.py --workers 4                 # six-image starter set
 python generate_all.py --workers 4             # every PokeAPI form, normal + shiny
 ```
 
-The full run discovers every entry in PokeAPI's Pokémon-form catalog, assigns habitat and rarity folders, and builds normal and shiny composites concurrently. Backdrops are selected by species habitat and type, with explicit form-level overrides only where a pose needs a particular context; Flying type, Levitate, or hovering alone do not trigger special staging. Mega Pidgeot is currently the one manually reviewed ground-context override, using the forest scene. The generator keeps only a small bounded worker queue in memory, saves each JPEG immediately, and discards downloaded source art instead of caching it. Form-specific artwork is preferred; if PokeAPI has no asset for a form, the species' default artwork is used and recorded in `manifest-all.json`. Variants with no usable source are explicitly marked unavailable. Existing output files are reused on a resumed run; pass `--force` to regenerate them. `--limit N` is available for a small test run.
+The full run discovers every entry in PokeAPI's Pokémon-form catalog, assigns habitat and rarity folders, and builds normal and shiny cards concurrently. Each habitat scene is inset into a 480×320 card doubled to 960×640, using the same dark palette, cyan frame, and pixel font as the bot's `/guess` cards. The header carries the Pokémon's region; the detail line names its form and rarity, with a catch hint in the footer. Backdrops still follow habitat/type selection with only explicit pose-specific overrides (Mega Pidgeot currently uses the forest scene); Flying type, Levitate, or hovering alone do not trigger special staging. `style_existing.py` applies the frame to an existing dataset without redownloading artwork, and can resume safely after interruption. The generator keeps only a small bounded worker queue in memory, saves each JPEG immediately, and discards downloaded source art instead of caching it. Form-specific artwork is preferred; if PokeAPI has no asset for a form, the species' default artwork is used and recorded in `manifest-all.json`. Variants with no usable source are explicitly marked unavailable. Existing correctly sized cards are reused on a resumed run; pass `--force` to regenerate them. `--limit N` is available for a small test run.
 
 PokeAPI provides the Pokémon artwork, not the scenery. The habitat backdrops are AI-generated original scenes with a soft-focus encounter-game look; they are not Pokétwo assets. Pokémon artwork remains the property of its respective rights holders; this is a fan-project asset set.
