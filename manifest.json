@@ -13,7 +13,7 @@
       "shiny": false,
       "region": "kanto",
       "backdrop": "cave",
-      "file": "legendary/0150-mewtwo.png",
+      "file": "legendary/0150-mewtwo.jpg",
       "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png",
       "used_pokemon_sprite_fallback": false,
       "size": [
@@ -28,7 +28,7 @@
       "shiny": false,
       "region": "kanto",
       "backdrop": "coast",
-      "file": "mythical/0151-mew.png",
+      "file": "mythical/0151-mew.jpg",
       "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png",
       "used_pokemon_sprite_fallback": false,
       "size": [
@@ -43,7 +43,7 @@
       "shiny": false,
       "region": "kanto",
       "backdrop": "forest",
-      "file": "normal/0025-pikachu.png",
+      "file": "normal/0025-pikachu.jpg",
       "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
       "used_pokemon_sprite_fallback": false,
       "size": [
@@ -58,7 +58,7 @@
       "shiny": true,
       "region": "kanto",
       "backdrop": "snowy-mountain",
-      "file": "shiny-legendary/0144-articuno-shiny.png",
+      "file": "shiny-legendary/0144-articuno-shiny.jpg",
       "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/144.png",
       "used_pokemon_sprite_fallback": false,
       "size": [
@@ -73,7 +73,7 @@
       "shiny": true,
       "region": "hoenn",
       "backdrop": "starry-ruins",
-      "file": "shiny-mythical/0385-jirachi-shiny.png",
+      "file": "shiny-mythical/0385-jirachi-shiny.jpg",
       "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/385.png",
       "used_pokemon_sprite_fallback": false,
       "size": [
@@ -88,7 +88,7 @@
       "shiny": true,
       "region": "kanto",
       "backdrop": "meadow",
-      "file": "shiny-normal/0133-eevee-shiny.png",
+      "file": "shiny-normal/0133-eevee-shiny.jpg",
       "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/133.png",
       "used_pokemon_sprite_fallback": false,
       "size": [

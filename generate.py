@@ -104,7 +104,7 @@ def _compose(backdrop: Image.Image, artwork: Image.Image, *, pixel_sprite: bool)
 def _filename(entry: dict) -> str:
     safe = re.sub(r"[^a-z0-9-]+", "-", str(entry["name"]).lower()).strip("-")
     suffix = "-shiny" if entry.get("shiny", False) else ""
-    return f"{int(entry['id']):04d}-{safe}{suffix}.png"
+    return f"{int(entry['id']):04d}-{safe}{suffix}.jpg"
 
 
 def render_spawn(entry: dict) -> dict:
@@ -122,7 +122,7 @@ def render_spawn(entry: dict) -> dict:
 
     output = ROOT / folder / _filename(entry)
     output.parent.mkdir(parents=True, exist_ok=True)
-    image.save(output, format="PNG", optimize=True)
+    image.save(output, format="JPEG", quality=88, optimize=True, progressive=True)
     return {
         "id": int(entry["id"]), "name": str(entry["name"]),
         "folder": folder, "shiny": shiny, "region": str(entry.get("region", "")),

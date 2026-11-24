@@ -1,6 +1,6 @@
 # Group chat spawn art
 
-A small image set for PikaBot's group Pokémon spawns. Each output is built by code from a **full-colour PokeAPI official artwork** PNG and a high-resolution scenic habitat backdrop. The Pokémon stays visible (no silhouette), and a soft black oval shadow sits underneath it, following the spawn-image layout we discussed.
+A Pokémon group-spawn image set for PikaBot. Each output combines **full-colour PokeAPI artwork** with a soft-focus habitat backdrop and a black oval ground shadow. Composites are JPEGs so a complete forms-and-shinies catalog stays practical to store and send.
 
 The image is sent as a plain Telegram photo. The caption is separate:
 
@@ -15,8 +15,9 @@ The image is sent as a plain Telegram photo. The caption is separate:
 - `legendary/` and `shiny-legendary/`
 - `mythical/` and `shiny-mythical/`
 - `assets/backdrops/` — illustrated scenery for forests, meadows, caves, snowy mountains, coasts, and starry ruins
-- `spawns.json` — the small starter batch; add entries here to generate more
-- `manifest.json` — generated index with species, rarity folder, backdrop, and artwork source URL
+- `spawns.json` — the six-image starter batch
+- `generate_all.py` — bounded-memory catalog generator for all PokeAPI Pokémon forms and shiny variants
+- `manifest.json` / `manifest-all.json` — starter and complete-catalog indexes, including artwork sources and unavailable variants
 
 Backdrops are selected by habitat, not just by region. A region can use several scenes, and the same scene type can serve Pokémon from different regions.
 
@@ -24,9 +25,10 @@ Backdrops are selected by habitat, not just by region. A region can use several 
 
 ```bash
 python -m pip install -r requirements.txt
-python generate.py --workers 4
+python generate.py --workers 4                 # six-image starter set
+python generate_all.py --workers 4             # every PokeAPI form, normal + shiny
 ```
 
-The starter catalog deliberately contains only **six outputs (one per rarity folder)**. Each Pokémon artwork is fetched from PokeAPI while jobs run concurrently; source artwork is not kept in a separate cache. The generator reads the committed backdrop plates, writes final composites and updates `manifest.json`. Re-run after editing `spawns.json` to add entries.
+The full run discovers every entry in PokeAPI's Pokémon-form catalog, assigns habitat and rarity folders, and builds normal and shiny composites concurrently. It keeps only a small bounded worker queue in memory, saves each JPEG immediately, and discards downloaded source art instead of caching it. `manifest-all.json` records each image and any variant PokeAPI does not provide. Existing output files are reused on a resumed run; pass `--force` to regenerate them. `--limit N` is available for a small test run.
 
-PokeAPI provides the Pokémon artwork, not the scenery. The habitat backdrops are AI-generated original scenes, using a soft-focus encounter-game look; they are not Pokétwo assets. Pokémon artwork remains the property of its respective rights holders; this is a fan-project asset set.
+PokeAPI provides the Pokémon artwork, not the scenery. The habitat backdrops are AI-generated original scenes with a soft-focus encounter-game look; they are not Pokétwo assets. Pokémon artwork remains the property of its respective rights holders; this is a fan-project asset set.
