@@ -162,14 +162,21 @@ def read_species(url: str) -> dict:
     }
 
 
-def choose_artwork(form: dict, pokemon: dict, shiny: bool) -> tuple[str | None, str | None, bool]:
+def choose_artwork(form: dict, pokemon: dict, shiny: bool,
+                   base_pokemon: dict | None = None) -> tuple[str | None, str | None, bool]:
     suffix = "shiny" if shiny else "normal"
-    candidates = (
+    candidates = [
         (form.get(f"form_official_{suffix}"), "form-official-artwork", False),
         (form.get(f"form_sprite_{suffix}"), "form-sprite", True),
         (pokemon.get(f"pokemon_official_{suffix}"), "pokemon-official-artwork-fallback", False),
         (pokemon.get(f"pokemon_sprite_{suffix}"), "pokemon-sprite-fallback", True),
-    )
+    ]
+    if base_pokemon:
+        candidates.extend((
+            (base_pokemon.get(f"pokemon_official_{suffix}"), "base-form-official-artwork-fallback", False),
+            (base_pokemon.get(f"pokemon_sprite_{suffix}"), "base-form-sprite-fallback", True),
+        ))
+    candidates = tuple(candidates)
     for url, source, pixel_sprite in candidates:
         if url:
             return str(url), source, pixel_sprite
@@ -218,15 +225,16 @@ def load_artwork(url: str) -> Image.Image:
     return image
 
 
-def render_one(form: dict, pokemon_map: dict, species_map: dict, overrides: dict,
-               output_root: Path, force: bool) -> dict:
+def render_one(form: dict, pokemon_map: dict, species_map: dict, base_pokemon_map: dict,
+               overrides: dict, output_root: Path, force: bool) -> dict:
     pokemon = pokemon_map[form["pokemon_name"]]
     species = species_map[pokemon["species_name"]]
+    base_pokemon = base_pokemon_map.get(pokemon["species_name"])
     backdrop_name = choose_backdrop(species, pokemon, form["form_name"], overrides)
     rows = []
     errors = []
     for shiny in (False, True):
-        url, source_kind, pixel_sprite = choose_artwork(form, pokemon, shiny)
+        url, source_kind, pixel_sprite = choose_artwork(form, pokemon, shiny, base_pokemon)
         path = output_file(output_root, species, form["form_name"], shiny)
         row = {
             "form_id": form["form_id"], "form": form["form_name"],
@@ -338,27 +346,29 @@ def main(argv: list[str] | None = None) -> int:
     if missing_map:
         raise RuntimeError(f"PokeAPI forms with no Pokémon metadata: {', '.join(missing_map[:10])}")
 
-    # Resolve the metadata in advance so every render task needs only one form record.
+    # Resolve rarity and a default-form fallback before rendering. A few recently added PokeAPI
+    # forms have no dedicated sprites yet; those still get a full-colour species-art composite.
     overrides = load_overrides()
-    prepared = []
+    base_pokemon_map = {}
     missing_species = []
     for form in forms:
         pokemon = pokemon_map[form["pokemon_name"]]
         if pokemon["species_name"] not in species_map:
             missing_species.append(form["form_name"])
-            continue
-        prepared.append(form)
+        if form["is_default"]:
+            base_pokemon_map.setdefault(pokemon["species_name"], pokemon)
     if missing_species:
         raise RuntimeError(f"PokeAPI species metadata missing for forms: {', '.join(missing_species[:10])}")
 
     missing_normal = missing_shiny = 0
     for form in forms:
         pokemon = pokemon_map[form["pokemon_name"]]
-        species = species_map[pokemon["species_name"]]
-        missing_normal += choose_artwork(form, pokemon, False)[0] is None
-        missing_shiny += choose_artwork(form, pokemon, True)[0] is None
+        base_pokemon = base_pokemon_map.get(pokemon["species_name"])
+        missing_normal += choose_artwork(form, pokemon, False, base_pokemon)[0] is None
+        missing_shiny += choose_artwork(form, pokemon, True, base_pokemon)[0] is None
     print(f"Resolved {len(species_data)} species and {len(pokemon_data)} Pokémon records; "
-          f"missing PokeAPI art URLs — normal: {missing_normal}, shiny: {missing_shiny}.", flush=True)
+          f"still missing PokeAPI art URLs after default-form fallback — "
+          f"normal: {missing_normal}, shiny: {missing_shiny}.", flush=True)
     if args.dry_run:
         return 0
 
@@ -369,8 +379,8 @@ def main(argv: list[str] | None = None) -> int:
     generated = 0
     with progress_path.open("w", encoding="utf-8") as progress:
         for index, result in enumerate(
-            bounded_map(lambda form: render_one(form, pokemon_map, species_map, overrides,
-                                                output_root, args.force), forms, args.workers),
+            bounded_map(lambda form: render_one(form, pokemon_map, species_map, base_pokemon_map,
+                                                overrides, output_root, args.force), forms, args.workers),
             start=1,
         ):
             output_rows.extend(result["rows"])
