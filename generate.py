@@ -72,8 +72,9 @@ def fetch_artwork(pokemon_id: int, *, shiny: bool) -> tuple[Image.Image, str, bo
     return image, source_url, pixel_sprite
 
 
-def _compose(backdrop: Image.Image, artwork: Image.Image, *, pixel_sprite: bool) -> Image.Image:
-    """Fit a full-bleed scenic plate, then add the actual Pokemon art and its ground shadow."""
+def _compose(backdrop: Image.Image, artwork: Image.Image, *, pixel_sprite: bool,
+             airborne: bool = False) -> Image.Image:
+    """Compose the cutout with ground contact, or a lifted flight pose and distant shadow."""
     canvas = ImageOps.fit(backdrop.convert("RGBA"), SIZE, method=Image.Resampling.LANCZOS,
                           centering=(0.5, 0.5))
     subject = artwork.convert("RGBA")
@@ -83,20 +84,25 @@ def _compose(backdrop: Image.Image, artwork: Image.Image, *, pixel_sprite: bool)
     resample = Image.Resampling.NEAREST if pixel_sprite else Image.Resampling.LANCZOS
     subject = subject.resize(dimensions, resample)
     x = (SIZE[0] - subject.width) // 2
-    ground_y = 514
-    y = ground_y - subject.height
 
-    # A distinct, soft-edged black oval remains visible below grounded feet; the earlier
-    # broader blur disappeared into dark forest/cave ground at Telegram preview size.
+    if airborne:
+        # Keep flying artwork in the open sky; its shadow belongs on the far-off land band.
+        y = max(24, (SIZE[1] - subject.height) // 2 - 35)
+        shadow_width = max(72, min(150, round(subject.width * 0.32)))
+        shadow_height, cy, alpha, blur = 14, SIZE[1] - 40, 78, 12
+    else:
+        ground_y = 514
+        y = ground_y - subject.height
+        shadow_width = max(120, min(280, round(subject.width * 0.56)))
+        shadow_height, cy, alpha, blur = 28, ground_y + 14, 205, 7
+
     shadow_layer = Image.new("RGBA", SIZE, (0, 0, 0, 0))
     shadow = ImageDraw.Draw(shadow_layer)
-    shadow_width = max(120, min(280, round(subject.width * 0.56)))
-    shadow_height = 28
-    cx, cy = SIZE[0] // 2, ground_y + 14
+    cx = SIZE[0] // 2
     shadow.ellipse((cx - shadow_width // 2, cy - shadow_height // 2,
                     cx + shadow_width // 2, cy + shadow_height // 2),
-                   fill=(0, 0, 0, 205))
-    canvas.alpha_composite(shadow_layer.filter(ImageFilter.GaussianBlur(7)))
+                   fill=(0, 0, 0, alpha))
+    canvas.alpha_composite(shadow_layer.filter(ImageFilter.GaussianBlur(blur)))
     canvas.alpha_composite(subject, (x, y))
     return canvas.convert("RGB")
 
@@ -118,7 +124,8 @@ def render_spawn(entry: dict) -> dict:
     with Image.open(backdrop_path) as source:
         backdrop = source.convert("RGBA")
     artwork, source_url, pixel_sprite = fetch_artwork(int(entry["id"]), shiny=shiny)
-    image = _compose(backdrop, artwork, pixel_sprite=pixel_sprite)
+    image = _compose(backdrop, artwork, pixel_sprite=pixel_sprite,
+                     airborne=bool(entry.get("airborne", False)))
 
     output = ROOT / folder / _filename(entry)
     output.parent.mkdir(parents=True, exist_ok=True)

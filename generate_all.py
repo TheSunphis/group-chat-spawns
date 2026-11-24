@@ -27,7 +27,7 @@ API = "https://pokeapi.co/api/v2"
 USER_AGENT = "PikaBot-GroupSpawnArt/1.0 (+https://github.com/TheSunphis/group-chat-spawns)"
 MAX_RESPONSE_BYTES = 16 * 1024 * 1024
 JPEG_QUALITY = 88
-BACKDROP_NAMES = ("forest", "meadow", "cave", "snowy-mountain", "coast", "starry-ruins")
+BACKDROP_NAMES = ("forest", "meadow", "cave", "snowy-mountain", "coast", "starry-ruins", "sky")
 RARITY_FOLDERS = {"normal", "shiny-normal", "legendary", "shiny-legendary", "mythical", "shiny-mythical"}
 HABITAT_BACKDROPS = {
     "forest": "forest",
@@ -43,7 +43,7 @@ HABITAT_BACKDROPS = {
 }
 TYPE_BACKDROPS = {
     "water": "coast", "ice": "snowy-mountain", "grass": "forest", "bug": "forest",
-    "normal": "meadow", "fairy": "meadow", "electric": "meadow", "flying": "meadow",
+    "normal": "meadow", "fairy": "meadow", "electric": "meadow", "flying": "sky",
     "fire": "meadow", "fighting": "cave", "rock": "cave", "ground": "cave",
     "steel": "cave", "poison": "cave", "ghost": "starry-ruins",
     "psychic": "starry-ruins", "dark": "starry-ruins", "dragon": "starry-ruins",
@@ -184,6 +184,8 @@ def choose_artwork(form: dict, pokemon: dict, shiny: bool,
 
 
 def choose_backdrop(species: dict, pokemon: dict, form_name: str, overrides: dict) -> str:
+    if "flying" in pokemon.get("types", []):
+        return "sky"
     key = (species["species_id"], form_name)
     if key in overrides:
         return overrides[key]
@@ -230,6 +232,7 @@ def render_one(form: dict, pokemon_map: dict, species_map: dict, base_pokemon_ma
     pokemon = pokemon_map[form["pokemon_name"]]
     species = species_map[pokemon["species_name"]]
     base_pokemon = base_pokemon_map.get(pokemon["species_name"])
+    airborne = "flying" in pokemon.get("types", [])
     backdrop_name = choose_backdrop(species, pokemon, form["form_name"], overrides)
     rows = []
     errors = []
@@ -240,7 +243,7 @@ def render_one(form: dict, pokemon_map: dict, species_map: dict, base_pokemon_ma
             "form_id": form["form_id"], "form": form["form_name"],
             "pokemon": pokemon["pokemon_name"], "species_id": species["species_id"],
             "species": species["species_name"], "rarity": "mythical" if species["is_mythical"] else "legendary" if species["is_legendary"] else "normal",
-            "shiny": shiny, "backdrop": backdrop_name,
+            "shiny": shiny, "backdrop": backdrop_name, "airborne": airborne,
             "file": path.relative_to(output_root).as_posix(),
             "artwork_url": url, "artwork_source": source_kind,
             "used_pokemon_sprite_fallback": bool(pixel_sprite),
@@ -264,7 +267,8 @@ def render_one(form: dict, pokemon_map: dict, species_map: dict, base_pokemon_ma
                 with Image.open(BACKDROP_DIR / f"{backdrop_name}.png") as source:
                     backdrop = source.convert("RGBA")
                 try:
-                    composite = _compose(backdrop, artwork, pixel_sprite=bool(pixel_sprite))
+                    composite = _compose(backdrop, artwork, pixel_sprite=bool(pixel_sprite),
+                                         airborne=airborne)
                     path.parent.mkdir(parents=True, exist_ok=True)
                     temp = path.with_name(f".{path.stem}.{os.getpid()}.tmp.jpg")
                     try:

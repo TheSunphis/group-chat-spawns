@@ -57,7 +57,7 @@
       "folder": "shiny-legendary",
       "shiny": true,
       "region": "kanto",
-      "backdrop": "snowy-mountain",
+      "backdrop": "sky",
       "file": "shiny-legendary/0144-articuno-shiny.jpg",
       "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/144.png",
       "used_pokemon_sprite_fallback": false,
