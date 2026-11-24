@@ -29,4 +29,4 @@ python generate.py --workers 4
 
 The starter catalog deliberately contains only **six outputs (one per rarity folder)**. Each Pokémon artwork is fetched from PokeAPI while jobs run concurrently; source artwork is not kept in a separate cache. The generator reads the committed backdrop plates, writes final composites and updates `manifest.json`. Re-run after editing `spawns.json` to add entries.
 
-PokeAPI provides the Pokémon artwork, not the scenery. The original backdrop plates do not copy Pokétwo's assets. Pokémon artwork remains the property of its respective rights holders; this is a fan-project asset set.
+PokeAPI provides the Pokémon artwork, not the scenery. The habitat backdrops are AI-generated original scenes, using a soft-focus encounter-game look; they are not Pokétwo assets. Pokémon artwork remains the property of its respective rights holders; this is a fan-project asset set.
