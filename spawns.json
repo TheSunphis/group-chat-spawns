@@ -1,0 +1,8 @@
+[
+  {"id": 25, "name": "pikachu", "folder": "normal", "region": "kanto", "backdrop": "forest"},
+  {"id": 133, "name": "eevee", "folder": "shiny-normal", "shiny": true, "region": "kanto", "backdrop": "meadow"},
+  {"id": 150, "name": "mewtwo", "folder": "legendary", "region": "kanto", "backdrop": "cave"},
+  {"id": 144, "name": "articuno", "folder": "shiny-legendary", "shiny": true, "region": "kanto", "backdrop": "snowy-mountain"},
+  {"id": 151, "name": "mew", "folder": "mythical", "region": "kanto", "backdrop": "coast"},
+  {"id": 385, "name": "jirachi", "folder": "shiny-mythical", "shiny": true, "region": "hoenn", "backdrop": "starry-ruins"}
+]

@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "canvas": [
+    960,
+    600
+  ],
+  "count": 6,
+  "spawns": [
+    {
+      "id": 150,
+      "name": "mewtwo",
+      "folder": "legendary",
+      "shiny": false,
+      "region": "kanto",
+      "backdrop": "cave",
+      "file": "legendary/0150-mewtwo.png",
+      "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png",
+      "used_pokemon_sprite_fallback": false,
+      "size": [
+        960,
+        600
+      ]
+    },
+    {
+      "id": 151,
+      "name": "mew",
+      "folder": "mythical",
+      "shiny": false,
+      "region": "kanto",
+      "backdrop": "coast",
+      "file": "mythical/0151-mew.png",
+      "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png",
+      "used_pokemon_sprite_fallback": false,
+      "size": [
+        960,
+        600
+      ]
+    },
+    {
+      "id": 25,
+      "name": "pikachu",
+      "folder": "normal",
+      "shiny": false,
+      "region": "kanto",
+      "backdrop": "forest",
+      "file": "normal/0025-pikachu.png",
+      "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
+      "used_pokemon_sprite_fallback": false,
+      "size": [
+        960,
+        600
+      ]
+    },
+    {
+      "id": 144,
+      "name": "articuno",
+      "folder": "shiny-legendary",
+      "shiny": true,
+      "region": "kanto",
+      "backdrop": "snowy-mountain",
+      "file": "shiny-legendary/0144-articuno-shiny.png",
+      "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/144.png",
+      "used_pokemon_sprite_fallback": false,
+      "size": [
+        960,
+        600
+      ]
+    },
+    {
+      "id": 385,
+      "name": "jirachi",
+      "folder": "shiny-mythical",
+      "shiny": true,
+      "region": "hoenn",
+      "backdrop": "starry-ruins",
+      "file": "shiny-mythical/0385-jirachi-shiny.png",
+      "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/385.png",
+      "used_pokemon_sprite_fallback": false,
+      "size": [
+        960,
+        600
+      ]
+    },
+    {
+      "id": 133,
+      "name": "eevee",
+      "folder": "shiny-normal",
+      "shiny": true,
+      "region": "kanto",
+      "backdrop": "meadow",
+      "file": "shiny-normal/0133-eevee-shiny.png",
+      "artwork_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/133.png",
+      "used_pokemon_sprite_fallback": false,
+      "size": [
+        960,
+        600
+      ]
+    }
+  ]
+}
