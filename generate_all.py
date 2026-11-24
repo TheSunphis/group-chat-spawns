@@ -48,6 +48,22 @@ TYPE_BACKDROPS = {
     "steel": "cave", "poison": "cave", "ghost": "starry-ruins",
     "psychic": "starry-ruins", "dark": "starry-ruins", "dragon": "starry-ruins",
 }
+# Non-Flying Pokémon whose official artwork is characteristically suspended/hovering.
+# PokeAPI's Levitate ability is also handled dynamically below.
+AIRBORNE_SPECIES = frozenset({
+    "aegislash", "baltoy", "bronzor", "bronzong", "carbink", "castform", "celebi",
+    "chimecho", "cosmog", "cosmoem", "cutiefly", "duskull", "drifloon", "drifblim",
+    "eternatus", "froslass", "giratina", "honedge", "jirachi", "lampent", "latias",
+    "latios", "litwick", "lunatone", "magnemite", "magneton", "magnezone", "mew",
+    "mesprit", "minior", "misdreavus", "nihilego", "necrozma", "pecharunt", "porygon",
+    "porygon-z", "porygon2", "reuniclus", "ribombee", "rotom", "shedinja", "solosis",
+    "solrock", "tapu-bulu", "tapu-fini", "tapu-koko", "tapu-lele", "unown", "uxie",
+    "volcarona", "weezing",
+})
+AIRBORNE_FORMS = frozenset({
+    "deoxys-attack", "deoxys-speed", "flutter-mane", "gimmighoul-roaming", "hoopa",
+    "mewtwo-mega-y",
+})
 T = TypeVar("T")
 U = TypeVar("U")
 
@@ -143,6 +159,7 @@ def read_pokemon(name: str) -> dict:
         "species_name": str(species.get("name") or ""),
         "species_url": species.get("url"),
         "types": [entry["type"]["name"] for entry in sorted(payload.get("types", []), key=lambda x: x["slot"])],
+        "abilities": [entry["ability"]["name"] for entry in payload.get("abilities", [])],
         "pokemon_official_normal": official.get("front_default"),
         "pokemon_official_shiny": official.get("front_shiny"),
         "pokemon_sprite_normal": sprites.get("front_default"),
@@ -160,6 +177,15 @@ def read_species(url: str) -> dict:
         "is_mythical": bool(payload.get("is_mythical")),
         "habitat": str(habitat.get("name") or ""),
     }
+
+
+def is_airborne(pokemon: dict, species: dict, form_name: str) -> bool:
+    return (
+        "flying" in pokemon.get("types", [])
+        or "levitate" in pokemon.get("abilities", [])
+        or species["species_name"] in AIRBORNE_SPECIES
+        or form_name in AIRBORNE_FORMS
+    )
 
 
 def choose_artwork(form: dict, pokemon: dict, shiny: bool,
@@ -184,7 +210,7 @@ def choose_artwork(form: dict, pokemon: dict, shiny: bool,
 
 
 def choose_backdrop(species: dict, pokemon: dict, form_name: str, overrides: dict) -> str:
-    if "flying" in pokemon.get("types", []):
+    if is_airborne(pokemon, species, form_name):
         return "sky"
     key = (species["species_id"], form_name)
     if key in overrides:
@@ -232,7 +258,7 @@ def render_one(form: dict, pokemon_map: dict, species_map: dict, base_pokemon_ma
     pokemon = pokemon_map[form["pokemon_name"]]
     species = species_map[pokemon["species_name"]]
     base_pokemon = base_pokemon_map.get(pokemon["species_name"])
-    airborne = "flying" in pokemon.get("types", [])
+    airborne = is_airborne(pokemon, species, form["form_name"])
     backdrop_name = choose_backdrop(species, pokemon, form["form_name"], overrides)
     rows = []
     errors = []
@@ -364,15 +390,17 @@ def main(argv: list[str] | None = None) -> int:
     if missing_species:
         raise RuntimeError(f"PokeAPI species metadata missing for forms: {', '.join(missing_species[:10])}")
 
-    missing_normal = missing_shiny = 0
+    missing_normal = missing_shiny = airborne_form_count = 0
     for form in forms:
         pokemon = pokemon_map[form["pokemon_name"]]
+        species = species_map[pokemon["species_name"]]
         base_pokemon = base_pokemon_map.get(pokemon["species_name"])
         missing_normal += choose_artwork(form, pokemon, False, base_pokemon)[0] is None
         missing_shiny += choose_artwork(form, pokemon, True, base_pokemon)[0] is None
+        airborne_form_count += is_airborne(pokemon, species, form["form_name"])
     print(f"Resolved {len(species_data)} species and {len(pokemon_data)} Pokémon records; "
-          f"still missing PokeAPI art URLs after default-form fallback — "
-          f"normal: {missing_normal}, shiny: {missing_shiny}.", flush=True)
+          f"{airborne_form_count} forms marked airborne; still missing PokeAPI art URLs "
+          f"after default-form fallback — normal: {missing_normal}, shiny: {missing_shiny}.", flush=True)
     if args.dry_run:
         return 0
 
@@ -405,6 +433,7 @@ def main(argv: list[str] | None = None) -> int:
         "format": f"JPEG quality {JPEG_QUALITY}",
         "form_count": len(forms),
         "available_image_count": available,
+        "airborne_image_count": sum(bool(row.get("available") and row.get("airborne")) for row in output_rows),
         "missing_image_count": len(missing),
         "generated_in_this_run": generated,
         "workers": args.workers,
